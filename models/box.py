@@ -1,8 +1,15 @@
 import datetime
 from typing import Optional, Any
 
+from google.protobuf.timestamp_pb2 import Timestamp
 from beanie import Document, PydanticObjectId
 from pydantic import BaseModel
+
+
+class Time(BaseModel):
+    nanos: int
+    seconds: int
+
 
 class Box(Document):
 
@@ -16,6 +23,7 @@ class Box(Document):
     category: str
     quantity: int
     created_at: datetime.datetime
+
 
     class Config:
         schema_extra = {
@@ -46,22 +54,6 @@ class UpdateBoxModel(BaseModel):
                 "description": "Valve games collection",
                 "category": "games",
                 "quantity": 100000,
-            }
-        }
-
-class Response(BaseModel):
-    status_code: int
-    response_type: str
-    description: str
-    data: Optional[Any]
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "status_code": 200,
-                "response_type": "success",
-                "description": "Operation successful",
-                "data": "Sample data"
             }
         }
 

@@ -1,7 +1,6 @@
-from datetime import datetime
+import datetime
 from typing import List
 
-from beanie import PydanticObjectId
 
 from models.box import Box
 
@@ -48,6 +47,6 @@ async def get_boxes_in_category(cat: str) -> List[Box]:
     return boxes
 
 
-async def get_boxes_in_time_range(time1: datetime, time2: datetime) -> List[Box]:
-    boxes = await box_collection.find({"date": {"$gte": time1, "$lt": time2}}).to_list()
+async def get_boxes_in_time_range(time1: datetime.datetime, time2: datetime.datetime) -> List[Box]:
+    boxes = await box_collection.find({"created_at": {"$gte": time1, "$lt": time2}}).to_list()
     return boxes
