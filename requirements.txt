@@ -1,0 +1,5 @@
+motor~=3.0.0
+beanie~=1.11.6
+starlette~=0.20.4
+pydantic~=1.9.1
+grpclib~=0.4.2
