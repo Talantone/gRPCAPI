@@ -22,7 +22,6 @@ class DBService(db_grpc.DatabaseServiceBase):
 
         new_box = box.Box(
             name=request.box.name,
-            id=request.box.id,
             price=request.box.price,
             description=request.box.description,
             category=request.box.category,
@@ -41,7 +40,7 @@ class DBService(db_grpc.DatabaseServiceBase):
     async def GetBox(self, stream: Stream[GetBoxRequest, GetBoxResponse]) -> None:
         request = await stream.recv_message()
         assert request is not None
-        id = request.id
+        id = request.box.id
         box = await boxes.get_box_by_id(id)
         timestamp = Timestamp()
         time_response = timestamp.FromDatetime(box.created_at)
@@ -59,10 +58,10 @@ class DBService(db_grpc.DatabaseServiceBase):
     async def GetBoxes(self, stream: [GetAllBoxesRequest, GetBoxesResponse]) -> None:
          response = await boxes.get_all_boxes()
          timestamp = Timestamp()
-         message = {}
+         message = []
          for box in response:
              time_response = timestamp.FromDatetime(box.created_at)
-             message += db_pb2.Box(
+             message.append(db_pb2.Box(
                  name=box.name,
                  id=box.id,
                  price=box.price,
@@ -70,7 +69,7 @@ class DBService(db_grpc.DatabaseServiceBase):
                  category=box.category,
                  quantity=box.quantity,
                  created_at=time_response
-             )
+             ))
          if response:
              status = db_pb2.RequestStatus.OK
          else:
@@ -80,46 +79,72 @@ class DBService(db_grpc.DatabaseServiceBase):
     async def UpdateBox(self, stream: Stream[UpdateBoxRequest, UpdateBoxResponse]) -> None:
         request = await stream.recv_message()
         assert request is not None
-        id = request.id
+        id = request.box.id
         update_box = box.UpdateBoxModel(
-            name=request.name,
-            price=request.price,
-            description=request.description,
-            category=request.category,
-            quantity=request.quantity,
+            name=request.box.name,
+            price=request.box.price,
+            description=request.box.description,
+            category=request.box.category,
+            quantity=request.box.quantity,
         )
         values = {**update_box.dict()}
-        response = boxes.update_box(id, values)
+        response = await boxes.update_box(id, values)
         if response:
-            message = db_pb2.RequestStatus.OK
+            status = db_pb2.RequestStatus.OK
         else:
-            message = db_pb2.RequestStatus.ERROR
-        await stream.send_message(UpdateBoxResponse(message=message))
+            status = db_pb2.RequestStatus.ERROR
+        await stream.send_message(UpdateBoxResponse(status=status))
 
     async def DeleteBox(self, stream: Stream[DeleteBoxRequest, DeleteBoxResponse]) -> None:
         request = await stream.recv_message()
         assert request is not None
-        id = request.id
-        response = boxes.delete_box(id)
+        id = request.box.id
+        response = await boxes.delete_box(id)
         if response:
-            message = db_pb2.RequestStatus.OK
+            status = db_pb2.RequestStatus.OK
         else:
-            message = db_pb2.RequestStatus.ERROR
-        await stream.send_message(UpdateBoxResponse(message=message))
+            status = db_pb2.RequestStatus.ERROR
+        await stream.send_message(UpdateBoxResponse(status=status))
 
     async def GetBoxesInCategory(self, stream: Stream[GetBoxesInCategoryRequest, GetBoxesResponse]) -> None:
         request = await stream.recv_message()
         assert request is not None
-        cat = request.category
-        response = boxes.get_boxes_in_category(cat)
-        message = {response, db_pb2.RequestStatus.OK}
-        await stream.send_message(GetBoxesResponse(message=message))
+        cat = request.box.category
+        response = await boxes.get_boxes_in_category(cat)
+        timestamp = Timestamp()
+        message = []
+        for box in response:
+            time_response = timestamp.FromDatetime(box.created_at)
+            message.append(db_pb2.Box(
+                name=box.name,
+                id=box.id,
+                price=box.price,
+                description=box.description,
+                category=box.category,
+                quantity=box.quantity,
+                created_at=time_response
+            ))
+        status = db_pb2.RequestStatus.OK
+        await stream.send_message(GetBoxesResponse(box=message, status=status))
 
     async def GetBoxesInTimeRange(self, stream: Stream[GetBoxesInTimeRangeRequest, GetBoxesResponse]) -> None:
         request = await stream.recv_message()
         assert request is not None
         time1 = request.start_time.ToDatetime()
         time2 = request.end_time.ToDatetime()
-        response = boxes.get_boxes_in_time_range(time1, time2)
-        message = {response, db_pb2.RequestStatus.OK}
-        await stream.send_message(GetBoxesResponse(message=message))
+        response = await boxes.get_boxes_in_time_range(time1, time2)
+        timestamp = Timestamp()
+        message = []
+        for box in response:
+            time_response = timestamp.FromDatetime(box.created_at)
+            message.append(db_pb2.Box(
+                name=box.name,
+                id=box.id,
+                price=box.price,
+                description=box.description,
+                category=box.category,
+                quantity=box.quantity,
+                created_at=time_response
+            ))
+        status = db_pb2.RequestStatus.OK
+        await stream.send_message(GetBoxesResponse(box=message, status=status))
