@@ -44,6 +44,7 @@ class DBService(db_grpc.DatabaseServiceBase):
         box = await boxes.get_box_by_id(id)
         timestamp = Timestamp()
         time_response = timestamp.FromDatetime(box.created_at)
+
         message = db_pb2.Box(
             name=box.name,
             id=box.id,
@@ -53,6 +54,7 @@ class DBService(db_grpc.DatabaseServiceBase):
             quantity=box.quantity,
             created_at=time_response
         )
+
         await stream.send_message(GetBoxResponse(box=message, status=db_pb2.RequestStatus.OK))
 
     async def GetBoxes(self, stream: [GetAllBoxesRequest, GetBoxesResponse]) -> None:
@@ -61,6 +63,7 @@ class DBService(db_grpc.DatabaseServiceBase):
          message = []
          for box in response:
              time_response = timestamp.FromDatetime(box.created_at)
+
              message.append(db_pb2.Box(
                  name=box.name,
                  id=box.id,
@@ -70,16 +73,19 @@ class DBService(db_grpc.DatabaseServiceBase):
                  quantity=box.quantity,
                  created_at=time_response
              ))
+
          if response:
              status = db_pb2.RequestStatus.OK
          else:
              status = db_pb2.RequestStatus.ERROR
+
          await stream.send_message(GetBoxesResponse(box=message, status=status))
 
     async def UpdateBox(self, stream: Stream[UpdateBoxRequest, UpdateBoxResponse]) -> None:
         request = await stream.recv_message()
         assert request is not None
         id = request.box.id
+
         update_box = box.UpdateBoxModel(
             name=request.box.name,
             price=request.box.price,
@@ -88,31 +94,36 @@ class DBService(db_grpc.DatabaseServiceBase):
             quantity=request.box.quantity,
         )
         values = {**update_box.dict()}
+
         response = await boxes.update_box(id, values)
         if response:
             status = db_pb2.RequestStatus.OK
         else:
             status = db_pb2.RequestStatus.ERROR
+
         await stream.send_message(UpdateBoxResponse(status=status))
 
     async def DeleteBox(self, stream: Stream[DeleteBoxRequest, DeleteBoxResponse]) -> None:
         request = await stream.recv_message()
         assert request is not None
         id = request.box.id
+
         response = await boxes.delete_box(id)
         if response:
             status = db_pb2.RequestStatus.OK
         else:
             status = db_pb2.RequestStatus.ERROR
+
         await stream.send_message(UpdateBoxResponse(status=status))
 
     async def GetBoxesInCategory(self, stream: Stream[GetBoxesInCategoryRequest, GetBoxesResponse]) -> None:
         request = await stream.recv_message()
         assert request is not None
-        cat = request.box.category
+        cat = request.category
         response = await boxes.get_boxes_in_category(cat)
         timestamp = Timestamp()
         message = []
+
         for box in response:
             time_response = timestamp.FromDatetime(box.created_at)
             message.append(db_pb2.Box(
@@ -124,7 +135,9 @@ class DBService(db_grpc.DatabaseServiceBase):
                 quantity=box.quantity,
                 created_at=time_response
             ))
+
         status = db_pb2.RequestStatus.OK
+
         await stream.send_message(GetBoxesResponse(box=message, status=status))
 
     async def GetBoxesInTimeRange(self, stream: Stream[GetBoxesInTimeRangeRequest, GetBoxesResponse]) -> None:
@@ -135,6 +148,7 @@ class DBService(db_grpc.DatabaseServiceBase):
         response = await boxes.get_boxes_in_time_range(time1, time2)
         timestamp = Timestamp()
         message = []
+
         for box in response:
             time_response = timestamp.FromDatetime(box.created_at)
             message.append(db_pb2.Box(
@@ -146,5 +160,7 @@ class DBService(db_grpc.DatabaseServiceBase):
                 quantity=box.quantity,
                 created_at=time_response
             ))
+
         status = db_pb2.RequestStatus.OK
+
         await stream.send_message(GetBoxesResponse(box=message, status=status))

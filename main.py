@@ -1,6 +1,5 @@
 import asyncio
 import contextvars
-from concurrent import futures
 from typing import Optional, cast
 from config.config import APP_PORT, APP_ADDR
 from grpclib.events import RecvRequest, listen
@@ -8,8 +7,6 @@ from grpclib.server import Server
 from grpclib.utils import graceful_exit
 
 from db.base import initiate_database
-from protobufs import db_pb2, db_grpc
-import grpc
 from db_service import DBService
 
 XRequestId = Optional[str]
